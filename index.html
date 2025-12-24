@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>Passwall 分流规则生成器</title>
+
+<style>
+:root {
+  --bg: #f3f4f6;
+  --card: #ffffff;
+  --border: #e5e7eb;
+  --text: #111827;
+  --muted: #6b7280;
+  --accent: #2563eb;
+  --accent-soft: #eff6ff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 14px;
+  background: var(--bg);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+  color: var(--text);
+}
+
+.container {
+  max-width: 1200px;
+  margin: auto;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+
+h1 { font-size: 20px; margin: 0 0 10px; }
+h2 { font-size: 14px; margin: 0 0 6px; color: var(--muted); }
+
+.rulesources {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 16px;
+  font-size: 13px;
+}
+
+.rulesources label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.top-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.query-row {
+  display: flex;
+  gap: 10px;
+}
+
+textarea {
+  width: 100%;
+  resize: vertical;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px;
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 12.5px;
+  line-height: 1.45;
+  background: #fff;
+}
+
+textarea[readonly] { background: #f9fafb; }
+
+#query { min-height: 140px; }
+
+button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 16px;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+button:hover { opacity: 0.9; }
+
+#check {
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: pre-line;
+  color: var(--muted);
+  background: var(--accent-soft);
+  border-radius: 8px;
+  padding: 10px;
+  min-height: 140px;
+}
+
+#detail {
+  min-height: 150px;
+  line-height: 1.4;
+}
+
+.outputs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+#outGeo,
+#outIP {
+  min-height: 130px;
+}
+
+@media (max-width: 900px) {
+  .top-grid { grid-template-columns: 1fr; }
+  .outputs { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>Passwall 分流规则生成器</h1>
+
+<div class="card">
+  <h2>规则来源</h2>
+  <div class="rulesources">
+    <label><input type="checkbox" id="ls" checked> Loyalsoldier（索引）</label>
+    <label><input type="checkbox" id="v2fly"> v2fly（domain-list）</label>
+    <label><input type="checkbox" id="bm7"> BlackMatrix7（Clash）</label>
+  </div>
+</div>
+
+<div class="top-grid">
+  <div class="card">
+    <h2>域名查询（每行一个）</h2>
+    <div class="query-row">
+      <textarea id="query" placeholder="cloudflare
+github
+gitlab
+google"></textarea>
+      <button onclick="runQuery()">生成规则</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>规则检查 / 官方校验</h2>
+    <div id="check">等待生成…</div>
+  </div>
+</div>
+
+<div class="card">
+  <h2>① Passwall 详细规则</h2>
+  <textarea id="detail" readonly></textarea>
+</div>
+
+<div class="outputs">
+  <div class="card">
+    <h2>② Passwall geosite域名</h2>
+    <textarea id="outGeo" readonly></textarea>
+  </div>
+  <div class="card">
+    <h2>③ Passwall geoip域名</h2>
+    <textarea id="outIP" readonly></textarea>
+  </div>
+</div>
+
+</div>
+
+<script>
+let LS_GEOSITE = null;
+let LS_GEOIP = null;
+
+async function loadLoyalsoldierIndexes() {
+  if (!LS_GEOSITE) {
+    const raw = await fetch('./data/loyalsoldier/geosite-index.json').then(r => r.json());
+    LS_GEOSITE = raw.map(v => v.toLowerCase());
+  }
+  if (!LS_GEOIP) {
+    const raw = await fetch('./data/loyalsoldier/geoip-index.json').then(r => r.json());
+    LS_GEOIP = raw.map(v => v.toLowerCase());
+  }
+}
+
+function normalizeRule(line) {
+  line = line.trim();
+  if (!line || line.startsWith('#')) return null;
+  if (line.startsWith('domain:')) return line;
+  if (line.startsWith('full:')) return line;
+  if (line.startsWith('DOMAIN-SUFFIX,')) return 'domain:' + line.split(',')[1];
+  if (line.startsWith('DOMAIN,')) return 'full:' + line.split(',')[1];
+  if (line.startsWith('IP-CIDR,')) return line.split(',')[1];
+  if (line.startsWith('IP-CIDR6,')) return line.split(',')[1];
+  if (/^[a-z0-9.-]+$/i.test(line)) return 'domain:' + line;
+  return null;
+}
+
+async function fetchText(url) {
+  const r = await fetch(url);
+  return r.ok ? await r.text() : null;
+}
+
+/* ===== BM7 大小写多策略（可新增） ===== */
+const BM7_MAP = {
+  paypal: 'PayPal',
+  github: 'GitHub',
+  openai: 'OpenAI',
+  youtube: 'YouTube',
+  telegram: 'Telegram',
+  linkedin: 'LinkedIn'
+};
+
+function titleCase(str) {
+  return str.replace(/\b\w/g, c => c.toUpperCase());
+}
+
+async function fetchBM7(name) {
+  const tried = new Set();
+  const candidates = [
+    name,
+    BM7_MAP[name],
+    titleCase(name),
+    name[0].toUpperCase() + name.slice(1),
+    name.toUpperCase(),
+    name.toLowerCase()
+  ].filter(Boolean);
+
+  for (const c of candidates) {
+    if (tried.has(c)) continue;
+    tried.add(c);
+
+    const txt = await fetchText(
+      'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/' +
+      c + '/' + c + '.list'
+    );
+    if (txt) {
+      check.textContent += `✔ BM7: ${name} → ${c}\n`;
+      return txt;
+    }
+  }
+
+  check.textContent += `✘ BM7: ${name}\n`;
+  return null;
+}
+
+async function runQuery() {
+  detail.value = outGeo.value = outIP.value = '';
+  check.textContent = '';
+
+  const items = query.value.split('\n').map(v => v.trim()).filter(Boolean);
+  const seen = new Set();
+
+  if (ls.checked) await loadLoyalsoldierIndexes();
+
+  for (const raw of items) {
+    const name = raw.toLowerCase();
+    detail.value += '# ' + name + '\n';
+
+    if (ls.checked) {
+      check.textContent +=
+        (LS_GEOSITE.includes(name) ? '✔ ' : '✘ ') + 'geosite:' + name + '\n';
+      if (LS_GEOSITE.includes(name)) outGeo.value += 'geosite:' + name + '\n';
+
+      if (LS_GEOIP.includes(name)) {
+        outIP.value += 'geoip:' + name + '\n';
+        check.textContent += '✔ geoip:' + name + '\n';
+      }
+    }
+
+    if (v2fly.checked) {
+      const txt = await fetchText(
+        'https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/' + name
+      );
+      if (txt) {
+        txt.split('\n').forEach(l => {
+          const r = normalizeRule(l);
+          if (r && !seen.has(r)) {
+            seen.add(r);
+            detail.value += r + '\n';
+          }
+        });
+      }
+    }
+
+    /* ===== BM7 ===== */
+    if (bm7.checked) {
+      const txt = await fetchBM7(name);
+      if (txt) {
+        txt.split('\n').forEach(l => {
+          const r = normalizeRule(l);
+          if (r && !seen.has(r)) {
+            seen.add(r);
+            detail.value += r + '\n';
+          }
+        });
+      }
+    }
+  }
+}
+</script>
+
+</body>
+</html>
