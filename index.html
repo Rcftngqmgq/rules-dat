@@ -252,7 +252,7 @@ async function fetchBM7(name) {
     }
   }
 
-  check.textContent += `✘ BM7: ${name}\n`;
+  check.textContent += `❌ BM7: ${name}\n`;
   return null;
 }
 
@@ -271,7 +271,7 @@ async function runQuery() {
 
     if (ls.checked) {
       check.textContent +=
-        (LS_GEOSITE.includes(name) ? '✔ ' : '✘ ') + 'geosite:' + name + '\n';
+        (LS_GEOSITE.includes(name) ? '✔ ' : '❌ ') + 'geosite:' + name + '\n';
       if (LS_GEOSITE.includes(name)) outGeo.value += 'geosite:' + name + '\n';
 
       if (LS_GEOIP.includes(name)) {
