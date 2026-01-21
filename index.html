@@ -14,9 +14,7 @@
   --accent: #2563eb;
   --accent-soft: #eff6ff;
 }
-
 * { box-sizing: border-box; }
-
 body {
   margin: 0;
   padding: 14px;
@@ -24,12 +22,10 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont;
   color: var(--text);
 }
-
 .container {
   max-width: 1200px;
   margin: auto;
 }
-
 .card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -37,35 +33,29 @@ body {
   padding: 12px 14px;
   margin-bottom: 12px;
 }
-
 h1 { font-size: 20px; margin: 0 0 10px; }
 h2 { font-size: 14px; margin: 0 0 6px; color: var(--muted); }
-
 .rulesources {
   display: grid;
-  grid-template-columns: repeat(3, auto);
+  grid-template-columns: repeat(4, auto);
   gap: 16px;
   font-size: 13px;
 }
-
 .rulesources label {
   display: flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
 }
-
 .top-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
-
 .query-row {
   display: flex;
   gap: 10px;
 }
-
 textarea {
   width: 100%;
   resize: vertical;
@@ -77,11 +67,8 @@ textarea {
   line-height: 1.45;
   background: #fff;
 }
-
 textarea[readonly] { background: #f9fafb; }
-
 #query { min-height: 140px; }
-
 button {
   background: var(--accent);
   color: #fff;
@@ -92,9 +79,7 @@ button {
   cursor: pointer;
   white-space: nowrap;
 }
-
 button:hover { opacity: 0.9; }
-
 #check {
   font-family: ui-monospace, monospace;
   font-size: 12px;
@@ -106,23 +91,13 @@ button:hover { opacity: 0.9; }
   padding: 10px;
   min-height: 140px;
 }
-
-#detail {
-  min-height: 150px;
-  line-height: 1.4;
-}
-
+#detail { min-height: 150px; }
 .outputs {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
-
-#outGeo,
-#outIP {
-  min-height: 130px;
-}
-
+#outGeo, #outIP { min-height: 130px; }
 @media (max-width: 900px) {
   .top-grid { grid-template-columns: 1fr; }
   .outputs { grid-template-columns: 1fr; }
@@ -141,6 +116,8 @@ button:hover { opacity: 0.9; }
     <label><input type="checkbox" id="ls" checked> Loyalsoldier（索引）</label>
     <label><input type="checkbox" id="v2fly"> v2fly（domain-list）</label>
     <label><input type="checkbox" id="bm7"> BlackMatrix7（Clash）</label>
+    <label><input type="checkbox" id="sing"> SagerNet（sing-geosite）</label>
+    <label><input type="checkbox" id="lyc"> lyc8503（sing-box-rules）</label>
   </div>
 </div>
 
@@ -169,11 +146,11 @@ google"></textarea>
 
 <div class="outputs">
   <div class="card">
-    <h2>② Passwall geosite域名</h2>
+    <h2>② Passwall Geosite</h2>
     <textarea id="outGeo" readonly></textarea>
   </div>
   <div class="card">
-    <h2>③ Passwall geoip域名</h2>
+    <h2>③ Passwall Geoip</h2>
     <textarea id="outIP" readonly></textarea>
   </div>
 </div>
@@ -183,6 +160,38 @@ google"></textarea>
 <script>
 let LS_GEOSITE = null;
 let LS_GEOIP = null;
+
+/* ===== SagerNet/sing-geosite ===== */
+const SING_BASE =
+  'https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/';
+
+async function checkSingBoxGeosite(name) {
+  const url = SING_BASE + 'geosite-' + name + '.srs';
+  try {
+    const r = await fetch(url, { method: 'HEAD' });
+    return r.ok ? url : null;
+  } catch {
+    return null;
+  }
+}
+
+/* ===== lyc8503/sing-box-rules ===== */
+const LYC_GEOSITE_BASE =
+  'https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geosite/';
+
+const LYC_GEOIP_BASE =
+  'https://raw.githubusercontent.com/lyc8503/sing-box-rules/rule-set-geoip/';
+
+async function checkLycRule(type, name) {
+  const base = type === 'geosite' ? LYC_GEOSITE_BASE : LYC_GEOIP_BASE;
+  const url = base + type + '-' + name + '.srs';
+  try {
+    const r = await fetch(url, { method: 'HEAD' });
+    return r.ok ? url : null;
+  } catch {
+    return null;
+  }
+}
 
 async function loadLoyalsoldierIndexes() {
   if (!LS_GEOSITE) {
@@ -213,7 +222,7 @@ async function fetchText(url) {
   return r.ok ? await r.text() : null;
 }
 
-/* ===== BM7 大小写多策略（可新增） ===== */
+/* ===== BM7 大小写多策略===== */
 const BM7_MAP = {
   paypal: 'PayPal',
   github: 'GitHub',
@@ -270,10 +279,12 @@ async function runQuery() {
     detail.value += '# ' + name + '\n';
 
     if (ls.checked) {
-      check.textContent +=
-        (LS_GEOSITE.includes(name) ? '✔ ' : '❌ ') + 'geosite:' + name + '\n';
-      if (LS_GEOSITE.includes(name)) outGeo.value += 'geosite:' + name + '\n';
-
+      if (LS_GEOSITE.includes(name)) {
+        outGeo.value += 'geosite:' + name + '\n';
+        check.textContent += '✔ geosite:' + name + '\n';
+      } else {
+        check.textContent += '❌ geosite:' + name + '\n';
+      }
       if (LS_GEOIP.includes(name)) {
         outIP.value += 'geoip:' + name + '\n';
         check.textContent += '✔ geoip:' + name + '\n';
@@ -295,7 +306,6 @@ async function runQuery() {
       }
     }
 
-    /* ===== BM7 ===== */
     if (bm7.checked) {
       const txt = await fetchBM7(name);
       if (txt) {
@@ -306,6 +316,34 @@ async function runQuery() {
             detail.value += r + '\n';
           }
         });
+      }
+    }
+
+    if (lyc.checked) {
+      const geoUrl = await checkLycRule('geosite', name);
+      if (geoUrl) {
+        outGeo.value += 'rule-set:remote:' + geoUrl + '\n';
+        check.textContent += '✔ lyc-geosite:' + name + '\n';
+      } else {
+        check.textContent += '❌ lyc-geosite:' + name + '\n';
+      }
+
+      const ipUrl = await checkLycRule('geoip', name);
+      if (ipUrl) {
+        outIP.value += 'rule-set:remote:' + ipUrl + '\n';
+        check.textContent += '✔ lyc-geoip:' + name + '\n';
+      } else {
+        check.textContent += '❌ lyc-geoip:' + name + '\n';
+      }
+    }
+
+    if (sing.checked) {
+      const url = await checkSingBoxGeosite(name);
+      if (url) {
+        outGeo.value += 'rule-set:remote:' + url + '\n';
+        check.textContent += '✔ sing-box:' + name + '\n';
+      } else {
+        check.textContent += '❌ sing-box:' + name + '\n';
       }
     }
   }
