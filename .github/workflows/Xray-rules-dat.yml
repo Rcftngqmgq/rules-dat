@@ -55,15 +55,23 @@ jobs:
             > "$work_dir/release.json"
 
           for type in geosite geoip; do
+            if [[ "$type" == "geoip" ]]; then
+              filename="geoip-full.dat"
+            else
+              filename="geosite.dat"
+            fi
+
             url="$(jq -r \
-              --arg filename "$type.dat" \
+              --arg filename "$filename" \
               '.assets[] | select(.name == $filename) | .browser_download_url' \
               "$work_dir/release.json")"
 
             if [[ -z "$url" ]]; then
-              echo "::error::$SOURCE_REPO 最新正式版中没有 $type.dat"
+              echo "::error::$SOURCE_REPO 最新正式版中没有 $filename"
               exit 1
             fi
+
+            echo "Downloading $filename"
 
             curl -fL --retry 3 --connect-timeout 30 \
               -o "$work_dir/$type.dat" \
@@ -80,7 +88,7 @@ jobs:
           mkdir -p "$OUTPUT_DIR"
 
           for type in geosite geoip; do
-            # 不传 -list 参数，列出数据库中的全部分类名称。
+            # 不传 -list 参数，列出全部分类名称。
             "$RUNNER_TEMP/geoview" \
               -type "$type" \
               -input "$work_dir/$type.dat" \
@@ -104,7 +112,7 @@ jobs:
             ' "$work_dir/$type-index-raw.txt" \
               > "$OUTPUT_DIR/$type-index.json"
 
-            # 确保生成的是非空分类数组。
+            # 校验分类数组非空且名称格式正确。
             jq -e '
               type == "array"
               and length > 0
@@ -133,7 +141,6 @@ jobs:
           git commit \
             -m "chore: update Xray geosite/geoip index"
 
-          # 同步其他工作流已提交的更新，再尝试推送。
           for attempt in 1 2 3; do
             git pull --rebase origin "$TARGET_BRANCH"
 
