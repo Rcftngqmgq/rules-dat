@@ -1,0 +1,148 @@
+name: Build Xray geosite & geoip index
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "15 3 * * 0"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-xray-geodata-index
+  cancel-in-progress: false
+
+env:
+  SOURCE_REPO: XTLS/Xray-rules-dat
+  OUTPUT_DIR: data/Xray-rules-dat
+  TARGET_BRANCH: ${{ github.event.repository.default_branch }}
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          fetch-depth: 0
+
+      - name: Download geoview
+        run: |
+          set -euo pipefail
+
+          curl -fL --retry 3 --connect-timeout 30 \
+            -o "$RUNNER_TEMP/geoview" \
+            https://github.com/snowie2000/geoview/releases/latest/download/geoview-linux-amd64
+
+          chmod +x "$RUNNER_TEMP/geoview"
+
+      - name: Download latest Xray dat files
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          work_dir="$RUNNER_TEMP/xray-geodata"
+          mkdir -p "$work_dir"
+
+          gh api "repos/$SOURCE_REPO/releases/latest" \
+            > "$work_dir/release.json"
+
+          for type in geosite geoip; do
+            url="$(jq -r \
+              --arg filename "$type.dat" \
+              '.assets[] | select(.name == $filename) | .browser_download_url' \
+              "$work_dir/release.json")"
+
+            if [[ -z "$url" ]]; then
+              echo "::error::$SOURCE_REPO 最新正式版中没有 $type.dat"
+              exit 1
+            fi
+
+            curl -fL --retry 3 --connect-timeout 30 \
+              -o "$work_dir/$type.dat" \
+              "$url"
+
+            test -s "$work_dir/$type.dat"
+          done
+
+      - name: Build geosite and geoip indexes
+        run: |
+          set -euo pipefail
+
+          work_dir="$RUNNER_TEMP/xray-geodata"
+          mkdir -p "$OUTPUT_DIR"
+
+          for type in geosite geoip; do
+            # 不传 -list 参数，列出数据库中的全部分类名称。
+            "$RUNNER_TEMP/geoview" \
+              -type "$type" \
+              -input "$work_dir/$type.dat" \
+              > "$work_dir/$type-index-raw.txt"
+
+            # 清理标题、空行和回车，统一为小写并去重。
+            jq -R -s '
+              split("\n")
+              | map(
+                  gsub("\r"; "")
+                  | gsub("^\\s+|\\s+$"; "")
+                )
+              | map(
+                  select(
+                    length > 0
+                    and . != "Available codes:"
+                  )
+                )
+              | map(ascii_downcase)
+              | unique
+            ' "$work_dir/$type-index-raw.txt" \
+              > "$OUTPUT_DIR/$type-index.json"
+
+            # 确保生成的是非空分类数组。
+            jq -e '
+              type == "array"
+              and length > 0
+              and all(.[]; test("^[a-z0-9_@!.-]+$"))
+            ' "$OUTPUT_DIR/$type-index.json" > /dev/null
+
+            jq -r '.[]' "$OUTPUT_DIR/$type-index.json" \
+              > "$OUTPUT_DIR/$type-index.txt"
+          done
+
+      - name: Commit and push
+        run: |
+          set -euo pipefail
+
+          git config user.name "github-actions[bot]"
+          git config user.email \
+            "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -- "$OUTPUT_DIR"
+
+          if git diff --cached --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+
+          git commit \
+            -m "chore: update Xray geosite/geoip index"
+
+          # 同步其他工作流已提交的更新，再尝试推送。
+          for attempt in 1 2 3; do
+            git pull --rebase origin "$TARGET_BRANCH"
+
+            if git push origin "HEAD:$TARGET_BRANCH"; then
+              exit 0
+            fi
+
+            echo "Push attempt $attempt failed"
+          done
+
+          echo "::error::推送失败，请查看日志后重新运行"
+          exit 1
