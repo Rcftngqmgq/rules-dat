@@ -2,6 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Passwall 分流规则生成器</title>
 
 <style>
@@ -14,18 +15,24 @@
   --accent: #2563eb;
   --accent-soft: #eff6ff;
 }
-* { box-sizing: border-box; }
+
+* {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
   padding: 14px;
   background: var(--bg);
-  font-family: system-ui, -apple-system, BlinkMacSystemFont;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
   color: var(--text);
 }
+
 .container {
   max-width: 1200px;
   margin: auto;
 }
+
 .card {
   background: var(--card);
   border: 1px solid var(--border);
@@ -33,29 +40,45 @@ body {
   padding: 12px 14px;
   margin-bottom: 12px;
 }
-h1 { font-size: 20px; margin: 0 0 10px; }
-h2 { font-size: 14px; margin: 0 0 6px; color: var(--muted); }
+
+h1 {
+  font-size: 20px;
+  margin: 0 0 10px;
+}
+
+h2 {
+  font-size: 14px;
+  margin: 0 0 6px;
+  color: var(--muted);
+}
+
 .rulesources {
   display: grid;
-  grid-template-columns: repeat(4, auto);
-  gap: 16px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px 16px;
   font-size: 13px;
 }
+
 .rulesources label {
   display: flex;
   align-items: center;
   gap: 6px;
   cursor: pointer;
 }
-.top-grid {
+
+.top-grid,
+.outputs {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+
 .query-row {
   display: flex;
+  align-items: flex-start;
   gap: 10px;
 }
+
 textarea {
   width: 100%;
   resize: vertical;
@@ -67,8 +90,30 @@ textarea {
   line-height: 1.45;
   background: #fff;
 }
-textarea[readonly] { background: #f9fafb; }
-#query { min-height: 140px; }
+
+textarea[readonly] {
+  background: #f9fafb;
+}
+
+#query,
+#check {
+  min-height: 140px;
+}
+
+#check {
+  color: var(--muted);
+  background: var(--accent-soft);
+}
+
+#detail {
+  min-height: 150px;
+}
+
+#outGeo,
+#outIP {
+  min-height: 130px;
+}
+
 button {
   background: var(--accent);
   color: #fff;
@@ -79,150 +124,280 @@ button {
   cursor: pointer;
   white-space: nowrap;
 }
-button:hover { opacity: 0.9; }
-#check {
-  font-family: ui-monospace, monospace;
-  font-size: 12px;
-  line-height: 1.5;
-  white-space: pre-line;
-  color: var(--muted);
-  background: var(--accent-soft);
-  border-radius: 8px;
-  padding: 10px;
-  min-height: 140px;
+
+button:hover {
+  opacity: 0.9;
 }
-#detail { min-height: 150px; }
-.outputs {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+
+button:disabled {
+  opacity: 0.6;
+  cursor: wait;
 }
-#outGeo, #outIP { min-height: 130px; }
+
 @media (max-width: 900px) {
-  .top-grid { grid-template-columns: 1fr; }
-  .outputs { grid-template-columns: 1fr; }
+  .top-grid,
+  .outputs {
+    grid-template-columns: 1fr;
+  }
+
+  .rulesources {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .rulesources {
+    grid-template-columns: 1fr;
+  }
+
+  .query-row {
+    flex-direction: column;
+  }
 }
 </style>
 </head>
 
 <body>
 <div class="container">
+  <h1>Passwall 分流规则生成器</h1>
 
-<h1>Passwall 分流规则生成器</h1>
-
-<div class="card">
-  <h2>规则来源</h2>
-  <div class="rulesources">
-    <label><input type="checkbox" id="ls" checked> Loyalsoldier（索引）</label>
-    <label><input type="checkbox" id="v2fly"> v2fly（domain-list）</label>
-    <label><input type="checkbox" id="bm7"> BlackMatrix7（Clash）</label>
-    <label><input type="checkbox" id="sing"> SagerNet（sing-geosite）</label>
-    <label><input type="checkbox" id="lyc"> 2dust（sing-box-rules）</label>
-  </div>
-</div>
-
-<div class="top-grid">
   <div class="card">
-    <h2>域名查询（每行一个）</h2>
-    <div class="query-row">
-      <textarea id="query" placeholder="cloudflare
+    <h2>规则来源</h2>
+
+    <div class="rulesources">
+      <label>
+        <input type="checkbox" id="ls" checked>
+        Loyalsoldier（索引）
+      </label>
+
+      <label>
+        <input type="checkbox" id="xray">
+        Xray-rules-dat（索引）
+      </label>
+
+      <label>
+        <input type="checkbox" id="v2fly">
+        v2fly（domain-list）
+      </label>
+
+      <label>
+        <input type="checkbox" id="bm7">
+        BlackMatrix7（Clash）
+      </label>
+
+      <label>
+        <input type="checkbox" id="sing">
+        SagerNet（sing-geosite）
+      </label>
+
+      <label>
+        <input type="checkbox" id="lyc">
+        2dust（sing-box-rules）
+      </label>
+    </div>
+  </div>
+
+  <div class="top-grid">
+    <div class="card">
+      <h2>域名查询（每行一个）</h2>
+
+      <div class="query-row">
+        <textarea id="query" placeholder="cloudflare
 github
 gitlab
 google"></textarea>
-      <button onclick="runQuery()">生成规则</button>
+
+        <button id="generate" type="button">生成规则</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>规则检查 / 来源校验</h2>
+      <textarea id="check" readonly>等待生成…</textarea>
     </div>
   </div>
 
   <div class="card">
-    <h2>规则检查 / 官方校验</h2>
-    <textarea id="check" readonly>等待生成…</textarea>
+    <h2>① Passwall 详细规则</h2>
+    <textarea id="detail" readonly></textarea>
   </div>
-</div>
 
-<div class="card">
-  <h2>① Passwall 详细规则</h2>
-  <textarea id="detail" readonly></textarea>
-</div>
+  <div class="outputs">
+    <div class="card">
+      <h2>② Passwall Geosite</h2>
+      <textarea id="outGeo" readonly></textarea>
+    </div>
 
-<div class="outputs">
-  <div class="card">
-    <h2>② Passwall Geosite</h2>
-    <textarea id="outGeo" readonly></textarea>
+    <div class="card">
+      <h2>③ Passwall Geoip</h2>
+      <textarea id="outIP" readonly></textarea>
+    </div>
   </div>
-  <div class="card">
-    <h2>③ Passwall Geoip</h2>
-    <textarea id="outIP" readonly></textarea>
-  </div>
-</div>
-
 </div>
 
 <script>
-let LS_GEOSITE = null;
-let LS_GEOIP = null;
+'use strict';
 
-/* ===== SagerNet/sing-geosite ===== */
+const elements = {
+  query: document.getElementById('query'),
+  check: document.getElementById('check'),
+  detail: document.getElementById('detail'),
+  outGeo: document.getElementById('outGeo'),
+  outIP: document.getElementById('outIP'),
+  generate: document.getElementById('generate')
+};
+
+/* ===== 本地索引来源 ===== */
+
+const INDEX_SOURCES = [
+  {
+    id: 'ls',
+    label: 'Loyalsoldier',
+    directory: './data/loyalsoldier'
+  },
+  {
+    id: 'xray',
+    label: 'Xray-rules-dat',
+    directory: './data/Xray-rules-dat'
+  }
+];
+
+const indexCache = new Map();
+
+function log(message) {
+  elements.check.value += message + '\n';
+}
+
+async function loadIndex(url) {
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error('HTTP ' + response.status + '：' + url);
+  }
+
+  const data = await response.json();
+
+  if (
+    !Array.isArray(data) ||
+    !data.every(value => typeof value === 'string')
+  ) {
+    throw new Error('索引必须为字符串数组：' + url);
+  }
+
+  const values = data
+    .map(value => value.trim().toLowerCase())
+    .filter(value => value && value !== 'available codes:');
+
+  if (values.length === 0) {
+    throw new Error('索引为空：' + url);
+  }
+
+  return new Set(values);
+}
+
+async function loadSourceIndexes(source) {
+  if (indexCache.has(source.id)) {
+    return indexCache.get(source.id);
+  }
+
+  const [geosite, geoip] = await Promise.all([
+    loadIndex(source.directory + '/geosite-index.json'),
+    loadIndex(source.directory + '/geoip-index.json')
+  ]);
+
+  const indexes = { geosite, geoip };
+  indexCache.set(source.id, indexes);
+
+  return indexes;
+}
+
+/* ===== SagerNet / sing-geosite ===== */
+
 const SING_BASE =
   'https://raw.githubusercontent.com/SagerNet/sing-geosite/rule-set/';
 
-async function checkSingBoxGeosite(name) {
-  const url = SING_BASE + 'geosite-' + name + '.srs';
-  try {
-    const r = await fetch(url, { method: 'HEAD' });
-    return r.ok ? url : null;
-  } catch {
-    return null;
-  }
-}
+/* ===== 2dust / sing-box-rules ===== */
 
-/* ===== 2dust/sing-box-rules ===== */
 const LYC_GEOSITE_BASE =
   'https://raw.githubusercontent.com/2dust/sing-box-rules/rule-set-geosite/';
 
 const LYC_GEOIP_BASE =
   'https://raw.githubusercontent.com/2dust/sing-box-rules/rule-set-geoip/';
 
-async function checkLycRule(type, name) {
-  const base = type === 'geosite' ? LYC_GEOSITE_BASE : LYC_GEOIP_BASE;
-  const url = base + type + '-' + name + '.srs';
+async function checkRemoteFile(url) {
   try {
-    const r = await fetch(url, { method: 'HEAD' });
-    return r.ok ? url : null;
+    const response = await fetch(url, { method: 'HEAD' });
+    return response.ok ? url : null;
   } catch {
     return null;
   }
 }
 
-async function loadLoyalsoldierIndexes() {
-  if (!LS_GEOSITE) {
-    const raw = await fetch('./data/loyalsoldier/geosite-index.json').then(r => r.json());
-    LS_GEOSITE = raw.map(v => v.toLowerCase());
-  }
-  if (!LS_GEOIP) {
-    const raw = await fetch('./data/loyalsoldier/geoip-index.json').then(r => r.json());
-    LS_GEOIP = raw.map(v => v.toLowerCase());
-  }
+async function checkSingBoxGeosite(name) {
+  return checkRemoteFile(
+    SING_BASE + 'geosite-' + encodeURIComponent(name) + '.srs'
+  );
 }
+
+async function checkLycRule(type, name) {
+  const base = type === 'geosite'
+    ? LYC_GEOSITE_BASE
+    : LYC_GEOIP_BASE;
+
+  return checkRemoteFile(
+    base + type + '-' + encodeURIComponent(name) + '.srs'
+  );
+}
+
+/* ===== 文本规则转换 ===== */
 
 function normalizeRule(line) {
   line = line.trim();
-  if (!line || line.startsWith('#')) return null;
-  if (line.startsWith('domain:')) return line;
-  if (line.startsWith('full:')) return line;
-  if (line.startsWith('DOMAIN-SUFFIX,')) return 'domain:' + line.split(',')[1];
-  if (line.startsWith('DOMAIN,')) return 'full:' + line.split(',')[1];
-  if (line.startsWith('IP-CIDR,')) return line.split(',')[1];
-  if (line.startsWith('IP-CIDR6,')) return line.split(',')[1];
-  if (/^[a-z0-9.-]+$/i.test(line)) return 'domain:' + line;
+
+  if (!line || line.startsWith('#')) {
+    return null;
+  }
+
+  if (line.startsWith('domain:') || line.startsWith('full:')) {
+    return line;
+  }
+
+  const fields = line.split(',').map(value => value.trim());
+  const type = fields[0];
+
+  if (type === 'DOMAIN-SUFFIX' && fields[1]) {
+    return 'domain:' + fields[1];
+  }
+
+  if (type === 'DOMAIN' && fields[1]) {
+    return 'full:' + fields[1];
+  }
+
+  if (
+    (type === 'IP-CIDR' || type === 'IP-CIDR6') &&
+    fields[1]
+  ) {
+    return fields[1];
+  }
+
+  if (/^[a-z0-9.-]+$/i.test(line)) {
+    return 'domain:' + line;
+  }
+
   return null;
 }
 
 async function fetchText(url) {
-  const r = await fetch(url);
-  return r.ok ? await r.text() : null;
+  try {
+    const response = await fetch(url);
+    return response.ok ? await response.text() : null;
+  } catch {
+    return null;
+  }
 }
 
-/* ===== BM7 大小写多策略===== */
+/* ===== BlackMatrix7 大小写匹配 ===== */
+
 const BM7_MAP = {
   paypal: 'PayPal',
   github: 'GitHub',
@@ -232,123 +407,203 @@ const BM7_MAP = {
   linkedin: 'LinkedIn'
 };
 
-function titleCase(str) {
-  return str.replace(/\b\w/g, c => c.toUpperCase());
+function titleCase(value) {
+  return value.replace(/\b\w/g, character => character.toUpperCase());
 }
 
 async function fetchBM7(name) {
-  const tried = new Set();
-  const candidates = [
+  const candidates = [...new Set([
     name,
     BM7_MAP[name],
     titleCase(name),
     name[0].toUpperCase() + name.slice(1),
     name.toUpperCase(),
     name.toLowerCase()
-  ].filter(Boolean);
+  ].filter(Boolean))];
 
-  for (const c of candidates) {
-    if (tried.has(c)) continue;
-    tried.add(c);
+  for (const candidate of candidates) {
+    const path = encodeURIComponent(candidate);
 
-    const txt = await fetchText(
-      'https://raw.githubusercontent.com/blackmatrix7/ios_rule_script/master/rule/Clash/' +
-      c + '/' + c + '.list'
+    const text = await fetchText(
+      'https://raw.githubusercontent.com/blackmatrix7/' +
+      'ios_rule_script/master/rule/Clash/' +
+      path + '/' + path + '.list'
     );
-    if (txt) {
-      check.textContent += `✔ BM7: ${name} → ${c}\n`;
-      return txt;
+
+    if (text !== null) {
+      log('✔ BM7：' + name + ' → ' + candidate);
+      return text;
     }
   }
 
-  check.textContent += `❌ BM7: ${name}\n`;
+  log('❌ BM7：' + name + '（未找到或请求失败）');
   return null;
 }
 
+/* ===== 主查询 ===== */
+
 async function runQuery() {
-  detail.value = outGeo.value = outIP.value = '';
-  check.textContent = '';
+  elements.detail.value = '';
+  elements.outGeo.value = '';
+  elements.outIP.value = '';
+  elements.check.value = '';
 
-  const items = query.value.split('\n').map(v => v.trim()).filter(Boolean);
-  const seen = new Set();
+  const items = [...new Set(
+    elements.query.value
+      .split(/\r?\n/)
+      .map(value => value.trim().toLowerCase())
+      .filter(Boolean)
+  )];
 
-  if (ls.checked) await loadLoyalsoldierIndexes();
+  if (items.length === 0) {
+    log('请输入要查询的规则名称。');
+    return;
+  }
 
-  for (const raw of items) {
-    const name = raw.toLowerCase();
-    detail.value += '# ' + name + '\n';
+  const selected = Object.fromEntries(
+    ['ls', 'xray', 'v2fly', 'bm7', 'sing', 'lyc'].map(id => [
+      id,
+      document.getElementById(id).checked
+    ])
+  );
 
-    if (ls.checked) {
-      if (LS_GEOSITE.includes(name)) {
-        outGeo.value += 'geosite:' + name + '\n';
-        check.textContent += '✔ geosite:' + name + '\n';
-      } else {
-        check.textContent += '❌ geosite:' + name + '\n';
-      }
-      if (LS_GEOIP.includes(name)) {
-        outIP.value += 'geoip:' + name + '\n';
-        check.textContent += '✔ geoip:' + name + '\n';
-      }
-    }
+  if (!Object.values(selected).some(Boolean)) {
+    log('请至少选择一个规则来源。');
+    return;
+  }
 
-    if (v2fly.checked) {
-      const txt = await fetchText(
-        'https://raw.githubusercontent.com/v2fly/domain-list-community/master/data/' + name
-      );
-      if (txt) {
-        txt.split('\n').forEach(l => {
-          const r = normalizeRule(l);
-          if (r && !seen.has(r)) {
-            seen.add(r);
-            detail.value += r + '\n';
-          }
-        });
-      }
-    }
+  elements.generate.disabled = true;
+  elements.generate.textContent = '查询中…';
 
-    if (bm7.checked) {
-      const txt = await fetchBM7(name);
-      if (txt) {
-        txt.split('\n').forEach(l => {
-          const r = normalizeRule(l);
-          if (r && !seen.has(r)) {
-            seen.add(r);
-            detail.value += r + '\n';
-          }
-        });
-      }
-    }
+  const geoRules = new Set();
+  const ipRules = new Set();
+  const detailRules = new Set();
+  const detailLines = [];
 
-    if (lyc.checked) {
-      const geoUrl = await checkLycRule('geosite', name);
-      if (geoUrl) {
-        outGeo.value += 'rule-set:remote:' + geoUrl + '\n';
-        check.textContent += '✔ lyc-geosite:' + name + '\n';
-      } else {
-        check.textContent += '❌ lyc-geosite:' + name + '\n';
-      }
+  function addDetailText(text) {
+    for (const line of text.split(/\r?\n/)) {
+      const rule = normalizeRule(line);
 
-      const ipUrl = await checkLycRule('geoip', name);
-      if (ipUrl) {
-        outIP.value += 'rule-set:remote:' + ipUrl + '\n';
-        check.textContent += '✔ lyc-geoip:' + name + '\n';
-      } else {
-        check.textContent += '❌ lyc-geoip:' + name + '\n';
-      }
-    }
-
-    if (sing.checked) {
-      const url = await checkSingBoxGeosite(name);
-      if (url) {
-        outGeo.value += 'rule-set:remote:' + url + '\n';
-        check.textContent += '✔ sing-box:' + name + '\n';
-      } else {
-        check.textContent += '❌ sing-box:' + name + '\n';
+      if (rule && !detailRules.has(rule)) {
+        detailRules.add(rule);
+        detailLines.push(rule);
       }
     }
   }
-}
-</script>
 
+  function renderOutputs() {
+    elements.detail.value = detailLines.join('\n');
+    elements.outGeo.value = [...geoRules].join('\n');
+    elements.outIP.value = [...ipRules].join('\n');
+  }
+
+  try {
+    const activeSources = [];
+
+    for (const source of INDEX_SOURCES) {
+      if (!selected[source.id]) {
+        continue;
+      }
+
+      try {
+        const indexes = await loadSourceIndexes(source);
+        activeSources.push({ source, indexes });
+      } catch (error) {
+        log('❌ ' + source.label + ' 索引加载失败：' + error.message);
+      }
+    }
+
+    for (const name of items) {
+      detailLines.push('# ' + name);
+
+      /* Loyalsoldier 与 Xray 独立校验，输出规则统一去重 */
+      for (const { source, indexes } of activeSources) {
+        if (indexes.geosite.has(name)) {
+          geoRules.add('geosite:' + name);
+          log('✔ ' + source.label + ' geosite:' + name);
+        } else {
+          log('❌ ' + source.label + ' geosite:' + name);
+        }
+
+        if (indexes.geoip.has(name)) {
+          ipRules.add('geoip:' + name);
+          log('✔ ' + source.label + ' geoip:' + name);
+        } else {
+          log('❌ ' + source.label + ' geoip:' + name);
+        }
+      }
+
+      /* v2fly 文本规则 */
+      if (selected.v2fly) {
+        const text = await fetchText(
+          'https://raw.githubusercontent.com/v2fly/' +
+          'domain-list-community/master/data/' +
+          encodeURIComponent(name)
+        );
+
+        if (text !== null) {
+          addDetailText(text);
+          log('✔ v2fly：' + name);
+        } else {
+          log('❌ v2fly：' + name + '（未找到或请求失败）');
+        }
+      }
+
+      /* BlackMatrix7 文本规则 */
+      if (selected.bm7) {
+        const text = await fetchBM7(name);
+
+        if (text !== null) {
+          addDetailText(text);
+        }
+      }
+
+      /* 2dust 远程规则集 */
+      if (selected.lyc) {
+        const [geoUrl, ipUrl] = await Promise.all([
+          checkLycRule('geosite', name),
+          checkLycRule('geoip', name)
+        ]);
+
+        if (geoUrl) {
+          geoRules.add('rule-set:remote:' + geoUrl);
+          log('✔ 2dust geosite:' + name);
+        } else {
+          log('❌ 2dust geosite:' + name + '（未找到或请求失败）');
+        }
+
+        if (ipUrl) {
+          ipRules.add('rule-set:remote:' + ipUrl);
+          log('✔ 2dust geoip:' + name);
+        } else {
+          log('❌ 2dust geoip:' + name + '（未找到或请求失败）');
+        }
+      }
+
+      /* SagerNet 远程规则集 */
+      if (selected.sing) {
+        const url = await checkSingBoxGeosite(name);
+
+        if (url) {
+          geoRules.add('rule-set:remote:' + url);
+          log('✔ SagerNet geosite:' + name);
+        } else {
+          log('❌ SagerNet geosite:' + name + '（未找到或请求失败）');
+        }
+      }
+
+      renderOutputs();
+    }
+  } catch (error) {
+    log('❌ 查询出错：' + error.message);
+  } finally {
+    renderOutputs();
+    elements.generate.disabled = false;
+    elements.generate.textContent = '生成规则';
+  }
+}
+
+elements.generate.addEventListener('click', runQuery);
+</script>
 </body>
 </html>
