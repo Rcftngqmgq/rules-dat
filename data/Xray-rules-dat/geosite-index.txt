@@ -76,6 +76,7 @@ anker
 annas-archive
 anon-v
 anthropic
+antifilter-list-community
 ap
 apa
 aparat
@@ -112,6 +113,7 @@ attwatchtv
 autodesk
 autoru
 auxgroup
+available-only-in-ru
 avaxhome
 aviasales
 avito
@@ -151,11 +153,14 @@ bing
 bitauto
 bitflyer
 bitly
+bitrix
 bitsquare
 bitwarden
 bjyouth
 blender
 blizzard
+blocked-in-cn
+blocked-in-ru
 blogspot
 bloomberg
 bluearchive
@@ -332,6 +337,7 @@ ccb
 cctv
 cdek
 cdn77
+cdprojekt
 ceno
 cerebras
 cern
@@ -476,6 +482,7 @@ dribbble
 dropbox
 drweb
 dslreports
+dsn-host
 duckduckgo
 duitang
 duolingo
@@ -530,6 +537,7 @@ faceit
 falungong
 familymart
 fandom
+fanfiction
 fans66
 fansta
 farfetch
@@ -556,6 +564,7 @@ flickr
 flowus
 flowwow
 flutter
+fluxer
 flyio
 focuschina
 fonbet
@@ -593,6 +602,8 @@ geolocation-!cn
 geolocation-cn
 gettyimages
 getui
+gfwlist-cn
+gfwlist-cn-exclude
 gfycat
 ggsel
 giffgaff
@@ -872,6 +883,7 @@ mailcom
 mailru
 mailru-group
 mainichi
+mainly-ir
 manhuagui
 manhuaren
 manorama
@@ -1140,6 +1152,7 @@ redhat
 redis
 redotpay
 redtube
+refilter
 regru
 remnawave
 renren
