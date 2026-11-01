@@ -752,6 +752,7 @@ intsig
 intuit
 ipip
 iqiyi
+iran-hosted-domains-lite
 isgd
 ishumei
 itchio
@@ -846,6 +847,7 @@ lg
 lianjia
 liberapay
 libgen
+librewolf
 liepin
 lifewire
 ligastavok
@@ -868,6 +870,9 @@ lizhi
 lkcoffee
 localbitcoins
 localizejs
+located-in-cn
+located-in-ir
+located-in-ru
 logitech
 londonreal
 longbridge
@@ -883,7 +888,6 @@ mailcom
 mailru
 mailru-group
 mainichi
-mainly-ir
 manhuagui
 manhuaren
 manorama
