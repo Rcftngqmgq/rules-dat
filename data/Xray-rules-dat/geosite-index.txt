@@ -160,6 +160,7 @@ bjyouth
 blender
 blizzard
 blocked-in-cn
+blocked-in-ir
 blocked-in-ru
 blogspot
 bloomberg
@@ -493,6 +494,7 @@ dw
 dwion
 dyna
 dynu
+dynx-antiban-domains
 dzen
 ea
 eastmoney
@@ -638,6 +640,7 @@ google-trust-services
 googlefcm
 goproxy
 gracg
+grafanalabs
 grapheneos
 gravatar
 greatfire
@@ -753,6 +756,7 @@ intuit
 ipip
 iqiyi
 iran-hosted-domains-lite
+iran-sanctioned-domains
 isgd
 ishumei
 itchio
@@ -1110,6 +1114,7 @@ pptv
 primevideo
 private
 progress
+projectmoon
 projectpoi
 projectsekai
 proquest
@@ -1157,6 +1162,7 @@ redis
 redotpay
 redtube
 refilter
+refilter-community
 regru
 remnawave
 renren
@@ -1461,6 +1467,7 @@ watchout
 wbgames
 weathercn
 webex
+webflow
 webnovel
 webtype
 weiphone

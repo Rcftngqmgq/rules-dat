@@ -113,6 +113,9 @@ il
 im
 in
 in-cn
+in-cn@cmcc
+in-cn@ctcc
+in-cn@cucc
 in-ir
 in-ru
 io
